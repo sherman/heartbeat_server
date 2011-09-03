@@ -16,7 +16,7 @@ public class HeartbeatServer {
 
     public static void main(String[] args) {
         Server server = new Server(4433);
-        server.setHandler(new HearbeatHandler());
+        server.setHandler(new HearbeatHandler(5000));
         try {
             server.start();
             server.join();
