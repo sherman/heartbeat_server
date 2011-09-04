@@ -56,7 +56,7 @@ public class HeartbeatHandler extends AbstractHandler {
                     try {
                         MailUtils.sendMail(
                             config.getAccount(),
-                            "There is no ping from the algorithm.",
+                            String.format("There is no ping from the '%s'", config.getName()),
                             "Last notification from the algorithm was at " + lastNotified.toString()
                         );
                         mailWasSent = true;
@@ -67,20 +67,33 @@ public class HeartbeatHandler extends AbstractHandler {
                 }
             }
         },
-        (config.getDelay() / 2),
-        (config.getDelay() / 2)
+            (config.getDelay() / 2),
+            (config.getDelay() / 2)
         );
     }
 
     @Override
     public void handle(
-            String target,
-            Request request,
-            HttpServletRequest httpServletRequest,
-            HttpServletResponse httpServletResponse
+        String target,
+        Request request,
+        HttpServletRequest httpServletRequest,
+        HttpServletResponse httpServletResponse
     ) throws IOException, ServletException {
         log.info(target);
         lastNotified = new Date();
+
+        if (mailWasSent == true) {
+            try {
+                MailUtils.sendMail(
+                    config.getAccount(),
+                    String.format("Ping comes from '%s'", config.getName()),
+                    "Last notification from the algorithm was at " + lastNotified.toString()
+                );
+            } catch (RuntimeException e) {
+                log.error(e);
+            }
+        }
+
         mailWasSent = false;
         OutputStream out = httpServletResponse.getOutputStream();
         out.write(ANSWER.getBytes());
