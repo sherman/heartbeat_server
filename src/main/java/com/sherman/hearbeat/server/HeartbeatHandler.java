@@ -83,15 +83,24 @@ public class HeartbeatHandler extends AbstractHandler {
         lastNotified = new Date();
 
         if (mailWasSent == true) {
-            try {
-                MailUtils.sendMail(
-                    config.getAccount(),
-                    String.format("Ping comes from '%s'", config.getName()),
-                    "Last notification from the algorithm was at " + lastNotified.toString()
-                );
-            } catch (RuntimeException e) {
-                log.error(e);
-            }
+            Thread mailer = new Thread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            MailUtils.sendMail(
+                                config.getAccount(),
+                                String.format("Ping comes from '%s'", config.getName()),
+                                "Last notification from the algorithm was at " + lastNotified.toString()
+                            );
+                        } catch (RuntimeException e) {
+                            log.error(e);
+                        }
+                    }
+                },
+                "mailer"
+            );
+            mailer.start();
         }
 
         mailWasSent = false;
