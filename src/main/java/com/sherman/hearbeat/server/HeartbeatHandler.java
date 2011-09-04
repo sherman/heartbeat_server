@@ -1,5 +1,7 @@
 package com.sherman.hearbeat.server;
 
+import com.sherman.hearbeat.mail.MailAccount;
+import com.sherman.hearbeat.util.MailUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -50,33 +52,20 @@ public class HeartbeatHandler extends AbstractHandler {
 
                 Date now = new Date();
                 if (now.getTime() > lastNotified.getTime() + delay) {
-                    String host = "smtp.gmail.com";
-                    int port = 465;
-                    final String username = "user";
-                    final String password = "pass";
-
-                    Properties props = new Properties();
-                    props.put("mail.smtps.host", host);
-                    props.put("mail.smtps.auth", "true");
-
-                    Session session = Session.getDefaultInstance(props);
-
                     try {
-                        Message message = new MimeMessage(session);
-                        message.setFrom(new InternetAddress("from"));
-                        message.setRecipients(
-                            Message.RecipientType.TO,
-                            InternetAddress.parse("to")
+                        MailUtils.sendMail(
+                            MailAccount.create().
+                                setHost("smtp.gmail.com").
+                                setPort(465).
+                                setUsername("login").
+                                setPassword("pass").
+                                setFrom("gabaden@gmail.com").
+                                setTo("gabaden@gmail.com"),
+                            "There is no ping from the algorithm.",
+                            "Last notification from the algorithm was at " + lastNotified.toString()
                         );
-                        message.setSubject("There is no ping from the algorithm.");
-                        message.setText("Last notification from the algorithm was at " + lastNotified.toString());
-
-                        Transport tr = session.getTransport("smtps");
-                        tr.connect(host, username, password);
-                        tr.sendMessage(message, message.getAllRecipients());
-                        tr.close();
                         mailWasSent = true;
-                    } catch (MessagingException e) {
+                    } catch (RuntimeException e) {
                         log.error(e);
                         mailWasSent = false;
                     }
