@@ -1,8 +1,13 @@
 package com.sherman.hearbeat.server;
 
 import com.sherman.hearbeat.util.Config;
+import com.sherman.hearbeat.util.ConfigItem;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+
+import java.util.List;
 
 
 /**
@@ -16,10 +21,24 @@ public class HeartbeatServer {
     private static Logger log = Logger.getLogger(HeartbeatServer.class);
 
     public static void main(String[] args) {
-        Config.getConfig();
+        List<ConfigItem> config = Config.getConfig();
+
+        if (config.isEmpty())
+            log.error("Config hasn't been found.");
 
         Server server = new Server(4433);
-        server.setHandler(new HeartbeatHandler(5000));
+
+        HandlerCollection handlerCollection = new HandlerCollection();
+
+        for (ConfigItem configItem : config) {
+            ContextHandler ctxHandler = new ContextHandler();
+            ctxHandler.setContextPath("/" + configItem.getName());
+            ctxHandler.setHandler(new HeartbeatHandler(configItem));
+            handlerCollection.addHandler(ctxHandler);
+        }
+
+        server.setHandler(handlerCollection);
+
         try {
             server.start();
             server.join();
