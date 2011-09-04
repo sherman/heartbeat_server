@@ -1,5 +1,6 @@
 package com.sherman.hearbeat.server;
 
+import com.sherman.hearbeat.util.Config;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 
@@ -15,6 +16,8 @@ public class HeartbeatServer {
     private static Logger log = Logger.getLogger(HeartbeatServer.class);
 
     public static void main(String[] args) {
+        Config.getConfig();
+
         Server server = new Server(4433);
         server.setHandler(new HeartbeatHandler(5000));
         try {
