@@ -44,12 +44,12 @@ public class HeartbeatHandler extends AbstractHandler {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                log.info("Timer task executed");
+                log.debug("Timer task executed");
 
                 if (lastNotified == null || mailWasSent)
                     return;
 
-                log.info("Timer task: " + lastNotified);
+                log.debug("Timer task: " + lastNotified);
 
                 Date now = new Date();
                 if (now.getTime() > lastNotified.getTime() + config.getDelay()) {
