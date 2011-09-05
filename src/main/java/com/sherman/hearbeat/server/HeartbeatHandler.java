@@ -52,6 +52,9 @@ public class HeartbeatHandler extends AbstractHandler {
                 log.debug("Timer task: " + lastNotified);
 
                 Date now = new Date();
+
+                //log.debug(String.format("now:%s, lastmod:%s, config:%s ", now.getTime(), lastNotified.getTime(), config.getDelay()));
+
                 if (now.getTime() > lastNotified.getTime() + config.getDelay()) {
                     try {
                         MailUtils.sendMail(
@@ -67,8 +70,8 @@ public class HeartbeatHandler extends AbstractHandler {
                 }
             }
         },
-            (config.getDelay() / 2),
-            (config.getDelay() / 2)
+        3000,
+        3000
         );
     }
 
