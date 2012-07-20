@@ -32,8 +32,8 @@ public class HeartbeatHandler extends AbstractHandler {
     private static final String ANSWER = "ok";
 
     private Timer timer;
-    private Date lastNotified;
-    private boolean mailWasSent = false;
+    private volatile Date lastNotified;
+    private volatile boolean mailWasSent = false;
     private final ConfigItem config;
 
     public HeartbeatHandler(final ConfigItem config) {
