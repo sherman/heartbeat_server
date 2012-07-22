@@ -19,6 +19,8 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Created by IntelliJ IDEA.
@@ -35,43 +37,45 @@ public class HeartbeatHandler extends AbstractHandler {
     private volatile Date lastNotified;
     private volatile boolean mailWasSent = false;
     private final ConfigItem config;
+    private static final Executor taskNotifierWorker = Executors.newFixedThreadPool(8);
 
     public HeartbeatHandler(final ConfigItem config) {
         this.config = config;
         log.info("Timer task created");
 
         timer = new Timer("notifier");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                log.debug("Timer task executed");
+        timer.schedule(
+            new TimerTask() {
+                @Override
+                public void run() {
+                    log.debug("Timer task executed");
 
-                if (lastNotified == null || mailWasSent)
-                    return;
+                    if (lastNotified == null || mailWasSent)
+                        return;
 
-                log.debug("Timer task: " + lastNotified);
+                    log.debug("Timer task: " + lastNotified);
 
-                Date now = new Date();
+                    Date now = new Date();
 
-                //log.debug(String.format("now:%s, lastmod:%s, config:%s ", now.getTime(), lastNotified.getTime(), config.getDelay()));
+                    //log.debug(String.format("now:%s, lastmod:%s, config:%s ", now.getTime(), lastNotified.getTime(), config.getDelay()));
 
-                if (now.getTime() > lastNotified.getTime() + config.getDelay()) {
-                    try {
-                        MailUtils.sendMail(
-                            config.getAccount(),
-                            String.format("There is no ping from the '%s'", config.getName()),
-                            "Last notification from the algorithm was at " + lastNotified.toString()
-                        );
-                        mailWasSent = true;
-                    } catch (RuntimeException e) {
-                        log.error(e);
-                        mailWasSent = false;
+                    if (now.getTime() > lastNotified.getTime() + config.getDelay()) {
+                        try {
+                            MailUtils.sendMail(
+                                config.getAccount(),
+                                String.format("There is no ping from the '%s'", config.getName()),
+                                "Last notification from the algorithm was at " + lastNotified.toString()
+                            );
+                            mailWasSent = true;
+                        } catch (RuntimeException e) {
+                            log.error(e);
+                            mailWasSent = false;
+                        }
                     }
                 }
-            }
-        },
-        3000,
-        3000
+            },
+            3000,
+            3000
         );
     }
 
@@ -86,24 +90,7 @@ public class HeartbeatHandler extends AbstractHandler {
         lastNotified = new Date();
 
         if (mailWasSent == true) {
-            Thread mailer = new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            MailUtils.sendMail(
-                                config.getAccount(),
-                                String.format("Ping comes from '%s'", config.getName()),
-                                "Last notification from the algorithm was at " + lastNotified.toString()
-                            );
-                        } catch (RuntimeException e) {
-                            log.error(e);
-                        }
-                    }
-                },
-                "mailer"
-            );
-            mailer.start();
+            taskNotifierWorker.execute(pingNotifierTask);
         }
 
         mailWasSent = false;
@@ -111,4 +98,19 @@ public class HeartbeatHandler extends AbstractHandler {
         out.write(ANSWER.getBytes());
         out.close();
     }
+
+    private Runnable pingNotifierTask = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                MailUtils.sendMail(
+                    config.getAccount(),
+                    String.format("Ping comes from '%s'", config.getName()),
+                    "Last notification from the algorithm was at " + lastNotified.toString()
+                );
+            } catch (RuntimeException e) {
+                log.error(e);
+            }
+        }
+    };
 }
